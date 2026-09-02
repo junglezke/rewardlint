@@ -121,6 +121,48 @@ class Audit:
         return table
 
     @property
+    def profile(self) -> str:
+        """Which kind of verifier this is, from the shape of its failures.
+
+        Added after auditing verl's GSM8K scorer, which reports a 98%
+        false-negative rate on this corpus. That is not a defect: it requires
+        the ``#### N`` answer format, so it correctly refuses every completion
+        that does not use it. Reporting that as a bug would be wrong, and a tool
+        that cannot tell the two apart is worse than no tool.
+
+        Returns one of ``permissive``, ``format_strict``, ``balanced``.
+        """
+        if self.exploits_accepted or self.false_positive_rate > 0.10:
+            return "permissive"
+        if self.false_negative_rate > 0.50:
+            return "format_strict"
+        return "balanced"
+
+    @property
+    def interpretation(self) -> str:
+        """How to read this result. The number that matters depends on the profile."""
+        if self.profile == "permissive":
+            return (
+                "Permissive verifier: it accepts completions that do not deserve reward. "
+                "The false-positive rate and the accepted exploits are the numbers that "
+                "matter; a policy will find them."
+            )
+        if self.profile == "format_strict":
+            return (
+                "Format-strict verifier: it accepts no exploits, and refuses most correct "
+                "answers because it requires one specific output shape. If that shape is "
+                "mandated by your prompt, this false-negative rate is your format "
+                "requirement rather than a defect -- but measure how often your model "
+                "actually complies, because every non-compliant rollout becomes silent "
+                "zero reward. Re-run with `--category exploit` for the format-independent "
+                "half of the corpus."
+            )
+        return (
+            "Balanced verifier: no exploits accepted, and it recognises correct answers "
+            "across surface forms."
+        )
+
+    @property
     def headline(self) -> str:
         if self.passed:
             return f"{self.name}: clean on {len(self.outcomes)} cases."
@@ -150,6 +192,8 @@ class Audit:
             "n_exploits_accepted": len(self.exploits_accepted),
             "attacks_that_work": sorted(self.attacks_that_work),
             "by_category": self.by_category(),
+            "profile": self.profile,
+            "interpretation": self.interpretation,
             "failures": [
                 {
                     "id": o.case.id,

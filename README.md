@@ -171,6 +171,24 @@ price of rule 1. If your task cannot pay it, prompt for `\boxed{}` — but then
 measure how often the model actually complies, because every non-compliant
 rollout becomes silent zero reward.
 
+## Not every high false-negative rate is a bug
+
+Run `rewardlint` against verl's GSM8K scorer and it reports a **98% false-negative
+rate**. That is not a defect. That verifier requires the `#### N` answer format, so it
+correctly refuses every completion that does not use it.
+
+A tool that cannot tell those two situations apart is worse than no tool, so
+`rewardlint` classifies what it is looking at and tells you which number matters:
+
+| profile | shape | what to read |
+|---|---|---|
+| **permissive** | accepts exploits, or FP > 10% | the false-positive rate and the accepted exploits — a policy will find them |
+| **format-strict** | no exploits, FN > 50% | your format requirement, not a defect. Re-run with `--category exploit` for the format-independent half — but measure how often your model actually complies with the format, because every non-compliant rollout becomes silent zero reward |
+| **balanced** | no exploits, recognises answers across surface forms | you are fine |
+
+This classification exists because auditing a real verifier produced a result that would
+have been wrong to report as a bug. Testing the tool against real code changed the tool.
+
 ## What it will not do
 
 - **It does not test execution-based code verifiers.** Those take a patch and a

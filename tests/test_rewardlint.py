@@ -297,6 +297,37 @@ def test_published_rates_have_not_drifted(name):
     assert not result.errors
 
 
+# -- verifier profile -------------------------------------------------------
+
+
+def test_profile_separates_permissive_from_format_strict():
+    """The distinction this tool would be useless without.
+
+    A verifier that requires `#### N` refuses most of the corpus. That is its
+    format requirement, not a defect, and calling it a bug would be wrong.
+    """
+    assert audit(substring_match).profile == "permissive"
+    assert audit(robust_match).profile == "balanced"
+    assert audit(exact_match).profile == "format_strict"
+    assert audit(boxed_exact).profile == "format_strict"
+
+
+def test_format_strict_interpretation_points_at_the_exploit_subset():
+    text = audit(boxed_exact).interpretation
+    assert "--category exploit" in text
+    assert "not a defect" in text or "rather than a defect" in text
+
+
+def test_permissive_interpretation_names_the_real_risk():
+    assert "policy will find them" in audit(substring_match).interpretation
+
+
+def test_profile_appears_in_the_json_report():
+    payload = json.loads(render(audit(substring_match), "json"))
+    assert payload["profile"] == "permissive"
+    assert payload["interpretation"]
+
+
 # -- reports and CLI --------------------------------------------------------
 
 

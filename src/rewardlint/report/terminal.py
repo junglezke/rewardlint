@@ -87,6 +87,9 @@ def render(
             + paint(f"{len(audit.false_negatives)} correct completions rejected", "dim"),
             "",
         ]
+        for chunk in textwrap.wrap(audit.interpretation, width - 6):
+            out.append("      " + paint(chunk, "dim"))
+        out.append("")
 
     if audit.errors:
         out += [_head("CRASHES", width, paint, rule), ""]

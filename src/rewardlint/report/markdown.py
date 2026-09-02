@@ -28,6 +28,8 @@ def render(audit: Audit) -> str:
         f"| **False negative** | **{audit.false_negative_rate:.0%}** "
         f"| {len(audit.false_negatives)} correct completions rejected — thrown-away learning signal |",
         "",
+        f"> **{audit.profile.replace('_', '-')}.** {audit.interpretation}",
+        "",
     ]
 
     if audit.errors:
