@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: "rewardlint: adversarial auditing for RLVR reward functions"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - alias: junglezke
+repository-code: "https://github.com/junglezke/rewardlint"
+abstract: >-
+  rewardlint measures what an RLVR verifier accepts and rejects. It runs a
+  reward function against a corpus of adversarial completions covering answer
+  equivalence, genuine distinctions, realistic output formatting, and nine
+  exploit strategies that a policy can reach by gradient descent without
+  solving the task, and reports the resulting false-positive and false-negative
+  rates together with the specific attacks that succeed.
+keywords:
+  - reinforcement learning
+  - RLVR
+  - reward hacking
+  - verifier
+  - large language models
+  - evaluation
+license: Apache-2.0
+version: 0.1.0

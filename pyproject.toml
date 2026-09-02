@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rewardlint"
+version = "0.1.0"
+description = "Find out what your RLVR reward function actually accepts."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "junglezke" }]
+keywords = [
+    "reinforcement-learning", "rlvr", "rlhf", "grpo", "reward-hacking",
+    "verifier", "llm", "evaluation", "testing",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Testing",
+]
+# No dependencies. On purpose: this has to install next to whatever your
+# training image already pins, and a linter that drags in a dependency tree
+# does not get installed on the cluster where it is needed.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.6"]
+
+[project.urls]
+Homepage = "https://github.com/junglezke/rewardlint"
+Repository = "https://github.com/junglezke/rewardlint"
+Issues = "https://github.com/junglezke/rewardlint/issues"
+
+[project.scripts]
+rewardlint = "rewardlint.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rewardlint"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "SIM"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
