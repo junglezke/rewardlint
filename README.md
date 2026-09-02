@@ -14,6 +14,9 @@ and tells you what it accepts that it shouldn't, and what it rejects that it sho
 
 **No dependencies. No GPU. No model calls. Runs in under a second.**
 
+
+<img src="docs/assets/report.svg" alt="rewardlint auditing a reward function: 38% false-positive rate, three exploit strategies accepted" width="100%">
+
 </div>
 
 ---
@@ -249,6 +252,7 @@ rldoctor tells you to audit the verifier, and this is how you audit it.
 git clone https://github.com/junglezke/rewardlint && cd rewardlint
 pip install -e ".[dev]"
 pytest      # 88 tests
+python tools/make_banner.py   # regenerate the README image
 ```
 
 The published rates in the table above are asserted as exact values in the test
