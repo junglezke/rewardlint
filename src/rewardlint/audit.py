@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from . import corpus as _corpus
-from .adapter import AdapterError, CallPlan, call, plan, to_score
+from .adapter import AdapterError, CallPlan, call, plan, probe, to_score
 from .case import Case
 
 #: A completion scoring above this is treated as accepted. Verifiers that
@@ -121,6 +121,34 @@ class Audit:
         return table
 
     @property
+    def is_graded(self) -> bool:
+        """True when the verifier returns partial credit rather than 0/1.
+
+        Shaped rewards -- open-r1's ``tag_count_reward`` pays 0.25 per correctly
+        formed tag -- are common, and against the default threshold of 0 *any*
+        partial credit reads as acceptance. That would report every shaped
+        reward as permissive, which is a threshold artefact rather than a
+        finding, so the report has to say so and ask for a threshold.
+        """
+        return any(
+            o.score is not None and 0.0 < o.score < 1.0 for o in self.outcomes
+        )
+
+    @property
+    def graded_note(self) -> str:
+        if not self.is_graded:
+            return ""
+        scores = sorted({round(o.score, 4) for o in self.outcomes if o.score is not None})
+        preview = ", ".join(str(v) for v in scores[:6]) + (" ..." if len(scores) > 6 else "")
+        return (
+            f"This verifier returns partial credit (scores seen: {preview}), and the "
+            f"threshold is {self.threshold}, so anything above zero counts as accepted. "
+            "For a shaped reward that is a threshold artefact rather than a finding -- "
+            "re-run with `--threshold` set to the score you would treat as success, or "
+            "read the per-case scores rather than the rates."
+        )
+
+    @property
     def profile(self) -> str:
         """Which kind of verifier this is, from the shape of its failures.
 
@@ -141,6 +169,8 @@ class Audit:
     @property
     def interpretation(self) -> str:
         """How to read this result. The number that matters depends on the profile."""
+        if self.is_graded:
+            return self.graded_note
         if self.profile == "permissive":
             return (
                 "Permissive verifier: it accepts completions that do not deserve reward. "
@@ -193,6 +223,7 @@ class Audit:
             "attacks_that_work": sorted(self.attacks_that_work),
             "by_category": self.by_category(),
             "profile": self.profile,
+            "is_graded": self.is_graded,
             "interpretation": self.interpretation,
             "failures": [
                 {
@@ -234,7 +265,7 @@ def audit(
         include_contested: include cases whose expected verdict is a judgement
             call. Off by default; they are reported separately.
     """
-    call_plan: CallPlan = plan(reward_fn)
+    call_plan: CallPlan = probe(reward_fn, plan(reward_fn))
     selected = list(cases) if cases is not None else _corpus.load(
         domains=domains, categories=categories, include_contested=False
     )

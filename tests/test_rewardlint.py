@@ -328,6 +328,48 @@ def test_profile_appears_in_the_json_report():
     assert payload["interpretation"]
 
 
+def test_partial_credit_is_recognised_not_reported_as_permissive():
+    """A shaped reward against a zero threshold reads as accepting everything.
+    That is a threshold artefact, and the report has to say so."""
+
+    def shaped(completion, reference):
+        return 0.25 if reference in completion else 0.0
+
+    result = audit(shaped)
+    assert result.is_graded
+    assert "partial credit" in result.interpretation
+    assert "--threshold" in result.interpretation
+    # And the threshold actually resolves it.
+    assert audit(shaped, threshold=0.9).false_positive_rate == 0.0
+
+
+def test_binary_verifiers_are_not_flagged_as_graded():
+    assert not audit(robust_match).is_graded
+    assert not audit(substring_match).is_graded
+
+
+# -- the TRL chat protocol --------------------------------------------------
+
+
+def _openr1_style_format_reward(completions, **kwargs):
+    """Shaped like open-r1's reward functions: TRL chat-format completions."""
+    return [1.0 if "<answer>" in c[0]["content"] else 0.0 for c in completions]
+
+
+def test_chat_format_is_detected_by_probing_not_guessed():
+    """Nothing in `f(completions, **kwargs)` says whether the elements are
+    strings or message lists. Guessing wrong reports every case as a crash,
+    which looks like the user's bug and is ours."""
+    result = audit(_openr1_style_format_reward)
+    assert not result.errors, [o.error for o in result.errors[:3]]
+    assert "chat" in result.call_plan
+
+
+def test_plain_string_functions_are_left_alone():
+    result = audit(substring_match)
+    assert "chat" not in result.call_plan
+
+
 # -- reports and CLI --------------------------------------------------------
 
 

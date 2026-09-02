@@ -171,6 +171,35 @@ price of rule 1. If your task cannot pay it, prompt for `\boxed{}` — but then
 measure how often the model actually complies, because every non-compliant
 rollout becomes silent zero reward.
 
+## Tested against real verifiers
+
+Two real open-source graders, and what each one taught:
+
+**verl's GSM8K scorer** reports a **98% false-negative rate**. Not a defect — it
+requires the `#### N` answer format and correctly refuses anything else. This is why
+the report classifies the verifier before quoting a rate (below).
+
+**open-r1's `tag_count_reward`** pays 0.25 for each correctly formed tag. Run against
+the default threshold it "accepts" `<think>reasoning</think>` with no answer at all,
+for 0.25. That is a threshold artefact rather than a finding — the function is doing
+exactly what it says — so `rewardlint` detects partial credit and asks you for a
+threshold instead of reporting a false-positive rate that means nothing:
+
+```
+This verifier returns partial credit (scores seen: 0.0, 0.25, 0.5), and the
+threshold is 0.0, so anything above zero counts as accepted. For a shaped reward
+that is a threshold artefact rather than a finding -- re-run with `--threshold`
+set to the score you would treat as success.
+```
+
+It is still worth knowing that a completion with no answer earns a quarter of your
+format reward. That is the format-farming surface, and whether it matters depends on
+how much of your total reward variance the format term carries.
+
+`open-r1`'s functions also use TRL's chat protocol — `completions` is a list of
+message lists, not strings — and nothing in the signature says so. `rewardlint` probes
+both shapes once and keeps the one that works, so these run unmodified.
+
 ## Not every high false-negative rate is a bug
 
 Run `rewardlint` against verl's GSM8K scorer and it reports a **98% false-negative
@@ -219,7 +248,7 @@ rldoctor tells you to audit the verifier, and this is how you audit it.
 ```bash
 git clone https://github.com/junglezke/rewardlint && cd rewardlint
 pip install -e ".[dev]"
-pytest      # 80 tests
+pytest      # 88 tests
 ```
 
 The published rates in the table above are asserted as exact values in the test

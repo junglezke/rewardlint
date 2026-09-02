@@ -19,7 +19,7 @@ than silently producing a nonsense report.
 from __future__ import annotations
 
 import inspect
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 #: Parameter names that mean "the model's output", most specific first.
@@ -76,6 +76,11 @@ class CallPlan:
     prompt_param: Optional[str]
     positional: bool
     batched: bool
+    #: True when the completion must be wrapped in the chat structure
+    #: ``[{"role": "assistant", "content": ...}]``. Detected by probing, not
+    #: guessed from the signature -- nothing in ``f(completions, **kwargs)``
+    #: says whether the elements are strings or message lists.
+    chat: bool = False
 
     def describe(self) -> str:
         if self.positional:
@@ -91,6 +96,8 @@ class CallPlan:
         if self.reference_param:
             bits.append(f"{self.reference_param}=reference")
         suffix = "  [batched: passes and expects lists]" if self.batched else ""
+        if self.chat:
+            suffix += "  [chat: wraps completions as [{'role','content'}]]"
         return "keyword: f(" + ", ".join(bits) + ")" + suffix
 
 
@@ -155,20 +162,49 @@ def plan(fn: Callable) -> CallPlan:
     )
 
 
+def _as_chat(text: str) -> Any:
+    return [{"role": "assistant", "content": text}]
+
+
 def call(fn: Callable, plan_: CallPlan, completion: str, reference: str, prompt: str = "") -> Any:
     """Invoke the reward function for one case and return its raw result."""
     if plan_.positional:
         args: List[Any] = [completion, reference]
         return fn(*args)
 
+    payload: Any = _as_chat(completion) if plan_.chat else completion
     kwargs: Dict[str, Any] = {}
     if plan_.completion_param:
-        kwargs[plan_.completion_param] = [completion] if plan_.batched else completion
+        kwargs[plan_.completion_param] = [payload] if plan_.batched else payload
     if plan_.reference_param:
         kwargs[plan_.reference_param] = [reference] if plan_.batched else reference
     if plan_.prompt_param:
-        kwargs[plan_.prompt_param] = [prompt] if plan_.batched else prompt
+        prompt_payload = _as_chat(prompt) if plan_.chat else prompt
+        kwargs[plan_.prompt_param] = [prompt_payload] if plan_.batched else prompt_payload
     return fn(**kwargs)
+
+
+def probe(fn: Callable, plan_: CallPlan) -> CallPlan:
+    """Settle whether the function wants plain strings or chat messages.
+
+    TRL reward functions receive ``completions`` as either a list of strings or
+    a list of message lists, depending on whether the dataset is conversational,
+    and the signature says nothing about which. Rather than make the user
+    declare it, we call the function once each way on a trivial input and keep
+    whichever does not raise. Guessing wrong here would report every case as a
+    crash, which looks like the user's bug and is ours.
+    """
+    if plan_.positional:
+        return plan_
+
+    for chat in (plan_.chat, not plan_.chat):
+        candidate = replace(plan_, chat=chat)
+        try:
+            to_score(call(fn, candidate, "42", "42", "what is 6 times 7?"))
+        except Exception:
+            continue
+        return candidate
+    return plan_
 
 
 def to_score(result: Any) -> float:
