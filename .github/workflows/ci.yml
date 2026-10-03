@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         include:
           # The corpus contains non-ASCII cases (U+2212, the pi symbol), so the
           # report has to survive a legacy Windows console code page.

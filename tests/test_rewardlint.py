@@ -98,7 +98,7 @@ def test_adapter_recognises_common_signatures(fn, expect_completion, expect_refe
 
 def test_adapter_handles_the_trl_batched_protocol():
     def reward(completions, ground_truth, **kwargs):
-        return [float(c == g) for c, g in zip(completions, ground_truth)]
+        return [float(c == g) for c, g in zip(completions, ground_truth, strict=True)]
 
     p = plan(reward)
     assert p.batched

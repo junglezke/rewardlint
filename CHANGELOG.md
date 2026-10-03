@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.0] — unreleased
+## [0.1.0] — 2026-10-03
 
 First public release.
 
@@ -20,3 +20,6 @@ First public release.
 - `robust_match`: 0% false positives, 2% false negatives, no exploits accepted.
 - Terminal, Markdown and JSON reports; `audit`, `compare` and `corpus` CLI
   commands with `--fail-on` for CI gating.
+- Verifier profile classification (permissive / format-strict / balanced), partial-credit
+  detection, and TRL chat-format probing -- all three added after auditing real verifiers
+  from verl and open-r1.

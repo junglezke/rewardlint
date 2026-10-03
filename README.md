@@ -246,6 +246,26 @@ right now?* — it reads a training log and flags the reward/eval divergence tha
 means an exploit has been found. They are useful separately and better together:
 rldoctor tells you to audit the verifier, and this is how you audit it.
 
+**[CHEATER](https://github.com/aabhimittal/RLVR-stress-test)** goes after the same
+question from the other end, and it is worth knowing which one you want:
+
+| | `rewardlint` | CHEATER |
+|---|---|---|
+| approach | a fixed, human-readable corpus: 87 cases, each with a stated reason | *search*: a GRPO-style optimiser over ~250k attack programs, plus metamorphic and memorisation checks |
+| output | which specific cases your verifier gets wrong, grouped by attack | a normalised exploitability score `Xi` and the attack programs that achieve it |
+| your verifier | any signature, unmodified — the calling convention, TRL chat format and partial credit are detected automatically | any `callable(instance, text) -> float` via `--verifier-module`; bring your own task with a sampler and an oracle |
+| cost | ~90 verifier calls against a fixed set, so a diff between two runs is a diff in your verifier | a few thousand calls; seeded search, reproducible per seed |
+| best for | a lint step: *did this change to my grader open a hole?* | a pen-test before an expensive run: *what is the worst a policy could find?* |
+
+Run `rewardlint` on every commit and something like CHEATER before a large run. They
+catch different things: a fixed corpus cannot find an exploit nobody has written down,
+and a search cannot tell you in one line why case `x.negation.plain` failed.
+
+Recent work on verifier errors in RLVR, for anyone going deeper:
+[*Where the Verifier Fails*](https://arxiv.org/abs/2609.01354) (a category-level audit),
+[*When the Reward Suite Is Leaky*](https://arxiv.org/abs/2607.11022) (natural verifier
+false positives), and [*LLMs Gaming Verifiers*](https://arxiv.org/abs/2604.15149).
+
 ## Development
 
 ```bash

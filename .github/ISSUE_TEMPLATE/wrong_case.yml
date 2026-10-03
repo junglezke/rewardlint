@@ -1,0 +1,18 @@
+name: A case I think is wrong
+description: Your verifier disagrees with the corpus and you think your verifier is right.
+labels: [corpus, contested]
+body:
+  - type: input
+    id: case
+    attributes:
+      label: Case id
+      placeholder: eq.wrap.units
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why the expected verdict is wrong
+      description: Some cases are genuinely judgement calls. Those move into the contested set.
+    validations:
+      required: true
