@@ -45,6 +45,8 @@ pip install rewardlint
 rewardlint compare
 ```
 
+Or the latest from `main`: `pip install git+https://github.com/junglezke/rewardlint`.
+
 ```
   verifier              FP     FN  exploits   attacks that work
   ------------------------------------------------------------------------------
